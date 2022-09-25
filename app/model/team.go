@@ -12,7 +12,7 @@ import (
 
 type Team struct {
 	ID        primitive.ObjectID `json:"_id" bson:"_id"`
-	Name      string             `json:"name" bson:"name"`
+	Name      string             `json:"name" bson:"name" validate:"required"`
 	Players   []Player           `json:"players,omitempty"`
 	CreatedAt time.Time          `json:"created_at" bson:"created_at"`
 	UpdatedAt time.Time          `json:"updated_at" bson:"updated_at"`

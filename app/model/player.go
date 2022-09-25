@@ -12,8 +12,8 @@ import (
 
 type Player struct {
 	ID        primitive.ObjectID `json:"_id" bson:"_id"`
-	Name      string             `json:"name" bson:"name"`
-	TeamId    string             `json:"team_id" bson:"team_id"`
+	Name      string             `json:"name" bson:"name" validate:"required"`
+	TeamId    string             `json:"team_id" bson:"team_id" validate:"required"`
 	Team      *Team              `json:"team,omitempty"`
 	CreatedAt time.Time          `json:"created_at" bson:"created_at"`
 	UpdatedAt time.Time          `json:"updated_at" bson:"updated_at"`

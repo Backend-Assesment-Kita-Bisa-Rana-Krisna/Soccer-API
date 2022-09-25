@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"soccer-api/app/model"
@@ -35,10 +36,11 @@ func CreatePlayer() gin.HandlerFunc {
 		}
 
 		if validationErr := validatePlayer.Struct(&player); validationErr != nil {
+			fmt.Println(validatePlayer)
 			c.JSON(http.StatusBadRequest, gin.H{
 				"data":    bson.M{},
 				"error":   true,
-				"message": validationErr,
+				"message": validationErr.Error(),
 			})
 			return
 		}
@@ -121,7 +123,7 @@ func UpdatePlayer() gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"data":    bson.M{},
 				"error":   true,
-				"message": validationErr,
+				"message": validationErr.Error(),
 			})
 			return
 		}

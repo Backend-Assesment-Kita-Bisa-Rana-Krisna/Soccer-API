@@ -38,7 +38,7 @@ func CreateTeam() gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"data":    bson.M{},
 				"error":   true,
-				"message": validationErr,
+				"message": validationErr.Error(),
 			})
 			return
 		}
@@ -148,7 +148,7 @@ func UpdateTeam() gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"data":    bson.M{},
 				"error":   true,
-				"message": validationErr,
+				"message": validationErr.Error(),
 			})
 			return
 		}
