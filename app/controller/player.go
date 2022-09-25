@@ -16,16 +16,16 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-var teamCollection *mongo.Collection = configuration.Collection("team")
-var validateTeam = validator.New()
+var playerCollection *mongo.Collection = configuration.Collection("player")
+var validatePlayer = validator.New()
 
-func CreateTeam() gin.HandlerFunc {
+func CreatePlayer() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		var team model.Team
+		var player model.Player
 		defer cancel()
 
-		if err := c.BindJSON(&team); err != nil {
+		if err := c.BindJSON(&player); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"data":    bson.M{},
 				"error":   true,
@@ -34,7 +34,7 @@ func CreateTeam() gin.HandlerFunc {
 			return
 		}
 
-		if validationErr := validateTeam.Struct(&team); validationErr != nil {
+		if validationErr := validatePlayer.Struct(&player); validationErr != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"data":    bson.M{},
 				"error":   true,
@@ -43,14 +43,15 @@ func CreateTeam() gin.HandlerFunc {
 			return
 		}
 
-		data := model.Team{
+		data := model.Player{
 			ID:        primitive.NewObjectID(),
-			Name:      team.Name,
+			Name:      player.Name,
+			TeamId:    player.TeamId,
 			CreatedAt: time.Now(),
 			UpdatedAt: time.Now(),
 		}
 
-		result, err := teamCollection.InsertOne(ctx, data)
+		result, err := playerCollection.InsertOne(ctx, data)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"data":    bson.M{},
@@ -69,27 +70,28 @@ func CreateTeam() gin.HandlerFunc {
 	}
 }
 
-func GetTeam() gin.HandlerFunc {
+func GetPlayer() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		teamId := c.Param("id")
-		var team model.Team
+		playerId := c.Param("id")
+		var player model.Player
 		defer cancel()
 
-		objId, _ := primitive.ObjectIDFromHex(teamId)
+		objId, _ := primitive.ObjectIDFromHex(playerId)
 
-		err := teamCollection.FindOne(ctx, bson.M{"_id": objId}).Decode(&team)
+		err := playerCollection.FindOne(ctx, bson.M{"_id": objId}).Decode(&player)
 		if err != nil {
 			c.JSON(http.StatusNotFound, gin.H{
 				"data":    bson.M{},
 				"error":   true,
-				"message": "Team with specified ID not found!",
+				"message": "Player with specified ID not found!",
 			})
 			return
 		}
+		player.WithTeam()
 
 		c.JSON(http.StatusOK, gin.H{
-			"data":    team,
+			"data":    player,
 			"error":   false,
 			"message": http.StatusOK,
 		})
@@ -97,45 +99,16 @@ func GetTeam() gin.HandlerFunc {
 	}
 }
 
-func GetTeamWithPlayer() gin.HandlerFunc {
+func UpdatePlayer() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		teamId := c.Param("id")
-		var team model.Team
+		playerId := c.Param("id")
+		var player model.Player
 		defer cancel()
 
-		objId, _ := primitive.ObjectIDFromHex(teamId)
+		objId, _ := primitive.ObjectIDFromHex(playerId)
 
-		err := teamCollection.FindOne(ctx, bson.M{"_id": objId}).Decode(&team)
-		if err != nil {
-			c.JSON(http.StatusNotFound, gin.H{
-				"data":    bson.M{},
-				"error":   true,
-				"message": "Team with specified ID not found!",
-			})
-			return
-		}
-		team.WithPlayer()
-
-		c.JSON(http.StatusOK, gin.H{
-			"data":    team,
-			"error":   false,
-			"message": http.StatusOK,
-		})
-		return
-	}
-}
-
-func UpdateTeam() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		teamId := c.Param("id")
-		var team model.Team
-		defer cancel()
-
-		objId, _ := primitive.ObjectIDFromHex(teamId)
-
-		if err := c.BindJSON(&team); err != nil {
+		if err := c.BindJSON(&player); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"data":    bson.M{},
 				"error":   true,
@@ -144,7 +117,7 @@ func UpdateTeam() gin.HandlerFunc {
 			return
 		}
 
-		if validationErr := validateTeam.Struct(&team); validationErr != nil {
+		if validationErr := validatePlayer.Struct(&player); validationErr != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"data":    bson.M{},
 				"error":   true,
@@ -153,8 +126,8 @@ func UpdateTeam() gin.HandlerFunc {
 			return
 		}
 
-		update := bson.M{"name": team.Name, "updated_at": time.Now()}
-		_, err := teamCollection.UpdateOne(ctx, bson.M{"_id": objId}, bson.M{"$set": update})
+		update := bson.M{"name": player.Name, "updated_at": time.Now()}
+		_, err := playerCollection.UpdateOne(ctx, bson.M{"_id": objId}, bson.M{"$set": update})
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"data":    bson.M{},
@@ -164,13 +137,13 @@ func UpdateTeam() gin.HandlerFunc {
 			return
 		}
 
-		var result model.Team
-		err = teamCollection.FindOne(ctx, bson.M{"_id": objId}).Decode(&result)
+		var result model.Player
+		err = playerCollection.FindOne(ctx, bson.M{"_id": objId}).Decode(&result)
 		if err != nil {
 			c.JSON(http.StatusNotFound, gin.H{
 				"data":    bson.M{},
 				"error":   true,
-				"message": "Team with specified ID not found!",
+				"message": "Player with specified ID not found!",
 			})
 			return
 		}
@@ -184,15 +157,15 @@ func UpdateTeam() gin.HandlerFunc {
 	}
 }
 
-func DeleteTeam() gin.HandlerFunc {
+func DeletePlayer() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		teamId := c.Param("id")
+		playerId := c.Param("id")
 		defer cancel()
 
-		objId, _ := primitive.ObjectIDFromHex(teamId)
+		objId, _ := primitive.ObjectIDFromHex(playerId)
 
-		result, err := teamCollection.DeleteOne(ctx, bson.M{"_id": objId})
+		result, err := playerCollection.DeleteOne(ctx, bson.M{"_id": objId})
 
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
@@ -207,7 +180,7 @@ func DeleteTeam() gin.HandlerFunc {
 			c.JSON(http.StatusNotFound, gin.H{
 				"data":    bson.M{},
 				"error":   true,
-				"message": "Team with specified ID not found!",
+				"message": "Player with specified ID not found!",
 			})
 			return
 		}
@@ -215,32 +188,32 @@ func DeleteTeam() gin.HandlerFunc {
 		c.JSON(http.StatusNoContent, gin.H{
 			"data":    bson.M{},
 			"error":   true,
-			"message": "Team berhasil dihapus!",
+			"message": "Player berhasil dihapus!",
 		})
 	}
 }
 
-func GetAllTeam() gin.HandlerFunc {
+func GetAllPlayer() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var team []*model.Team
+		var player []model.Player
 
 		findOptions := options.Find()
 		findOptions.SetLimit(20)
-		cur, err := teamCollection.Find(context.TODO(), bson.D{{}}, findOptions)
+		cur, err := playerCollection.Find(context.TODO(), bson.D{{}}, findOptions)
 		if err != nil {
 			log.Fatal(err)
 		}
 		for cur.Next(context.TODO()) {
-			var elem *model.Team
+			var elem model.Player
 			err := cur.Decode(&elem)
 			if err != nil {
 				log.Fatal(err)
 			}
-			team = append(team, elem)
+			player = append(player, elem)
 		}
 
 		c.JSON(http.StatusOK, gin.H{
-			"data":    &team,
+			"data":    &player,
 			"error":   false,
 			"message": http.StatusOK,
 		})

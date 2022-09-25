@@ -2,6 +2,7 @@ package main
 
 import (
 	"soccer-api/configuration"
+	"soccer-api/route"
 
 	"github.com/gin-gonic/gin"
 )
@@ -17,6 +18,10 @@ func main() {
 			"data": "Hello World",
 		})
 	})
+
+	api := router.Group("/api")
+
+	route.ApiRoutes(api)
 
 	router.Run("localhost:3000")
 
