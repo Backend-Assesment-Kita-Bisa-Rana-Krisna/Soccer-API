@@ -1,6 +1,7 @@
 package main
 
 import (
+	"os"
 	"soccer-api/configuration"
 	"soccer-api/route"
 
@@ -8,6 +9,12 @@ import (
 )
 
 func main() {
+	port := os.Getenv("APP_PORT")
+
+	if port == "" {
+		port = "8000"
+	}
+
 	router := gin.Default()
 	router.SetTrustedProxies([]string{"127.0.0.1"})
 
@@ -23,7 +30,7 @@ func main() {
 
 	route.ApiRoutes(api)
 
-	router.Run("localhost:3000")
+	router.Run(":" + port)
 
 	defer configuration.CloseConnectDB()
 }

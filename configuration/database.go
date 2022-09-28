@@ -1,10 +1,13 @@
 package configuration
 
 import (
+	"os"
 	"context"
 	"fmt"
 	"log"
+	"time"
 
+	"github.com/joho/godotenv"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -16,18 +19,32 @@ func ConnectDB() *mongo.Client {
 		return Client
 	}
 
-	var err error
-	clientOptions := options.Client().ApplyURI("mongodb://127.0.0.1:27017")
-	Client, err = mongo.Connect(context.Background(), clientOptions)
+	err := godotenv.Load(".env")
+
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+
+	MongoDb := os.Getenv("MONGODB_URL")
+
+	Client, err = mongo.NewClient(options.Client().ApplyURI(MongoDb))
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	err = Client.Ping(context.Background(), nil)
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+
+	defer cancel()
+	err = Client.Connect(ctx)
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	err = Client.Ping(ctx, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println("Connected to MongoDB.")
 	return Client
 }
 
@@ -46,6 +63,6 @@ func CloseConnectDB() {
 
 func Collection(collectionName string) *mongo.Collection {
 	var client *mongo.Client = ConnectDB()
-	var collection *mongo.Collection = client.Database("soccer-api").Collection(collectionName)
+	var collection *mongo.Collection = client.Database(os.Getenv("MONGODB_DATABASE")).Collection(collectionName)
 	return collection
 }
